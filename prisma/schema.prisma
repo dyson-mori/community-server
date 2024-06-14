@@ -1,0 +1,159 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id String @id @default(uuid())
+
+  username String @unique
+  password String
+
+  email String @unique
+  phone String @unique
+  photo String
+
+  // 1 x N
+  posts Post[] @relation("post")
+
+  @@map("admins")
+}
+
+model User {
+  id String @id @default(uuid())
+
+  username String @unique
+  password String
+
+  name        String
+  description String
+  contact     String @unique
+  gender      String
+  photo       String
+
+  // 1 x N
+  folders   Folder[]       @relation("user-folder")
+  comments  Comments[]     @relation("user-comment")
+  feedbacks FeedBack[]     @relation("user-feedback")
+  history   WatchHistory[] @relation("user-history")
+
+  @@map("users")
+}
+
+model Folder {
+  id String @id @default(uuid())
+
+  name   String
+  public Boolean
+
+  user_id String @unique
+
+  user  User         @relation("user-folder", fields: [user_id], references: [id], onDelete: Cascade)
+  posts PostFolder[] @relation("post-folder")
+
+  created_at DateTime @default(now())
+
+  @@map("folders")
+}
+
+model Post {
+  id       String @id
+  admin_id String
+
+  name        String?
+  description String?
+  url         String
+  preview     String
+  width       String
+  height      String
+  duration    String
+
+  admin Admin @relation("post", fields: [admin_id], references: [id])
+
+  tags      PostTag[]      @relation("post-tag")
+  comments  Comments[]     @relation("comment")
+  feedbacks FeedBack[]     @relation("feedback")
+  watched   WatchHistory[] @relation("watch-history")
+  folders   PostFolder[]   @relation("post-folder")
+
+  created_at DateTime @default(now())
+
+  @@map("posts")
+}
+
+model Tag {
+  id String @id
+
+  name       String   @unique
+  type       String
+  created_at DateTime @default(now())
+
+  post PostTag[] @relation("tag")
+
+  @@map("tags")
+}
+
+model Comments {
+  id String @id @default(cuid())
+
+  message    String
+  created_at DateTime @default(now())
+
+  post_id String
+  post    Post   @relation("comment", fields: [post_id], references: [id], onDelete: Cascade)
+
+  user_id String
+  user    User   @relation("user-comment", fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("comments")
+}
+
+// N x M  
+model PostTag {
+  post_id String
+  post    Post   @relation("post-tag", fields: [post_id], references: [id], onDelete: Cascade)
+
+  tag_id String
+  tag    Tag    @relation("tag", fields: [tag_id], references: [id], onDelete: Cascade)
+
+  @@id([post_id, tag_id])
+}
+
+model FeedBack {
+  post_id String
+  post    Post   @relation("feedback", fields: [post_id], references: [id], onDelete: Cascade)
+
+  user_id String
+  user    User   @relation("user-feedback", fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@id([post_id, user_id])
+}
+
+model WatchHistory {
+  user_id String
+  user    User   @relation("user-history", fields: [user_id], references: [id], onDelete: Cascade)
+
+  post_id String
+  post    Post   @relation("watch-history", fields: [post_id], references: [id], onDelete: Cascade)
+
+  @@id([post_id, user_id])
+}
+
+model PostFolder {
+  post_id String
+  post    Post   @relation("post-folder", fields: [post_id], references: [id], onDelete: Cascade)
+
+  folder_id String
+  folder    Folder @relation("post-folder", fields: [folder_id], references: [id])
+
+  @@id([post_id, folder_id])
+}
+
+// alt + shift + F
